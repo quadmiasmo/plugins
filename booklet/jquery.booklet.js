@@ -57,17 +57,23 @@
             var controls = booklet.settings.controls;
             
             // add data to the button elements
-            $(controls.next).data("method", "next");
-            $(controls.prev).data("method", "prev");
+            $(controls.next, controls.container).data("method", "next");
+            $(controls.prev, controls.container).data("method", "prev");
             
             // next/previous buttons handler
             $(controls.container, booklet).delegate(controls.next + "," + controls.prev, "click", function(e) {
                 
                 e.preventDefault();
                 
+                var button = $(e.currentTarget);
+                
+                if (button.hasClass(booklet.settings.disabledButtonClass)) {
+                    return false;
+                }
+                
                 // invoke the page turn function with the current booklet as context,
-                // also passing in the current jquery event
-                turnPage.apply(booklet, [ e ]);
+                // and also the method/direction to animate
+                turnPage.apply(booklet, [ button.data("method") ]);
             });
             
             // close button handler, trigger an event so users can specify behavior
@@ -105,7 +111,8 @@
     
     function processBookletPages() {
         
-        var settings = this.settings;
+        var booklet = this;
+        var settings = booklet.settings;
         var height = settings.page.height;
         var leftPanelClass = settings.panels.left.replace(/^\./, ""); // get rid of the leading . from the selector
         
@@ -134,6 +141,7 @@
                     right: css.start.right + "px",
                     "z-index": 5000 + (index * 10 * operator) // "stack" the images by counting down (for right) or up (for left) by 10
                 })
+                .data("method", (panel == "left") ? "prev" : "next")
                 
                 // ...and bind the events (next/prev get triggered in the turnPage function)
                 .bind("next", function() {
@@ -144,6 +152,25 @@
                 })
                 .bind("reset", function() {
                     $(this).css(css.start);
+                })
+                
+                // support clicking and dragging to turn pages
+                .bind("mousedown", function(e) {
+                    e.preventDefault();
+                    
+                    var x = e.pageX;
+                    var page = $(this);
+                    var method = page.data("method");
+                    
+                    page.bind("mouseup", function(e) {
+                        
+                        var delta = x - e.pageX;
+                        
+                        if ((delta > 0 && method == "next") || (delta < 0 && method == "prev")) {
+                            page.unbind("mouseup");
+                            turnPage.apply(booklet, [ method ]);
+                        }
+                    });
                 });
                 
                 // add the page to the correct array
@@ -154,16 +181,7 @@
         return pages;
     }
     
-    function turnPage(e) {
-        
-        var button = $(e.currentTarget);
-        
-        if (button.hasClass(this.settings.disabledButtonClass)) {
-            return false;
-        }
-        
-        // get the method name from the clicked button, will be "next" or "prev"        
-        var method = button.data("method");
+    function turnPage(method) {        
         
         // always animate a page from both panels.
         // right to left for "next" page turns, left to right for "prev"
