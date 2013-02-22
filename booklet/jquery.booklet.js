@@ -14,16 +14,16 @@
 (function($) {
 
     var defaults = {
-        container: ".preview-booklet",
+        container: ".booklet",
         panels: {
-            left: ".preview-pane-left",
-            right: ".preview-pane-right"
+            left: ".booklet-pane-left",
+            right: ".booklet-pane-right"
         },
         controls: {
-            container: ".preview-controls",
-            next: ".preview-next",
-            prev: ".preview-prev",
-            close: ".preview-close"
+            container: ".booklet-controls",
+            next: ".booklet-next",
+            prev: ".booklet-prev",
+            close: ".booklet-close"
         },
         page: {
             width: 290,
